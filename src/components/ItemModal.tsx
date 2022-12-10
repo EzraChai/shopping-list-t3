@@ -1,21 +1,19 @@
 import type { Dispatch, FC, SetStateAction } from "react";
-import { trpc, RouterOutputs } from "../utils/trpc";
+import { trpc } from "../utils/trpc";
 import { useState } from "react";
-import type { ShoppingItem } from "@prisma/client";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 import { useQueryClient } from "@tanstack/react-query";
 
 interface ItemModalProps {
   setModalOpen: Dispatch<SetStateAction<boolean>>;
-  setItems: Dispatch<SetStateAction<ShoppingItem[]>>;
 }
 
-export const ItemModal: FC<ItemModalProps> = ({ setModalOpen, setItems }) => {
+export const ItemModal: FC<ItemModalProps> = ({ setModalOpen }) => {
   const queryClient = useQueryClient();
   const [input, setInput] = useState<string>("");
 
   const addItemMutation = trpc.item.addItem.useMutation({
-    onSuccess: (shoppingItem) => {
+    onSuccess: () => {
       queryClient.invalidateQueries();
       setInput(() => "");
       setModalOpen((ModalOpenState) => !ModalOpenState);
