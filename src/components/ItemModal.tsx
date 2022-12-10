@@ -1,7 +1,9 @@
 import type { Dispatch, FC, SetStateAction } from "react";
-import { trpc } from "../utils/trpc";
+import { trpc, RouterOutputs } from "../utils/trpc";
 import { useState } from "react";
 import type { ShoppingItem } from "@prisma/client";
+import { AiOutlineLoading3Quarters } from "react-icons/ai";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface ItemModalProps {
   setModalOpen: Dispatch<SetStateAction<boolean>>;
@@ -9,11 +11,12 @@ interface ItemModalProps {
 }
 
 export const ItemModal: FC<ItemModalProps> = ({ setModalOpen, setItems }) => {
+  const queryClient = useQueryClient();
   const [input, setInput] = useState<string>("");
 
   const addItemMutation = trpc.item.addItem.useMutation({
     onSuccess: (shoppingItem) => {
-      setItems((prev) => [...prev, shoppingItem]);
+      queryClient.invalidateQueries();
       setInput(() => "");
       setModalOpen((ModalOpenState) => !ModalOpenState);
     },
@@ -48,9 +51,13 @@ export const ItemModal: FC<ItemModalProps> = ({ setModalOpen, setItems }) => {
               addItemMutation.mutate({ name: input });
             }}
             disabled={addItemMutation.isLoading}
-            className="rounded-lg bg-violet-600 p-2 text-sm font-semibold text-white transition hover:bg-violet-500"
+            className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-500"
           >
-            {addItemMutation.isLoading ? "Loading..." : "Add"}
+            {addItemMutation.isLoading ? (
+              <AiOutlineLoading3Quarters className=" animate-spin text-xl" />
+            ) : (
+              "Add"
+            )}
           </button>
         </div>
       </div>

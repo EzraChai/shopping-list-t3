@@ -1,12 +1,16 @@
 import type { ShoppingItem } from "@prisma/client";
 import { type NextPage } from "next";
 import Head from "next/head";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ItemModal } from "../components/ItemModal";
+import { HiX } from "react-icons/hi";
 
 import { trpc } from "../utils/trpc";
+import { useQueryClient } from "@tanstack/react-query";
 
 const Home: NextPage = () => {
+  const queryClient = useQueryClient();
+
   const [items, setItems] = useState<ShoppingItem[]>([]);
   const [modalOpen, setModalOpen] = useState<boolean>(false);
 
@@ -18,10 +22,27 @@ const Home: NextPage = () => {
       },
     }
   );
+
+  const deleteItemMutation = trpc.item.deleteItem.useMutation({
+    onSuccess() {
+      queryClient.invalidateQueries();
+    },
+  });
+
+  const checkItemMutation = trpc.item.checkItem.useMutation({
+    onSuccess() {
+      queryClient.invalidateQueries();
+    },
+  });
+
   const hello = trpc.example.hello.useQuery({ text: "from Chloe Gan" });
 
   if (!itemsData || isLoading) {
-    return <div className="">Loading...</div>;
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        Loading...
+      </div>
+    );
   }
 
   return (
@@ -47,12 +68,37 @@ const Home: NextPage = () => {
         </div>
         {hello.data?.greeting}
         <div className="mt-4 flex w-full flex-col gap-2">
-          {items.map((item) => (
+          {itemsData.map((item) => (
             <div
               key={item.id}
-              className=" flex items-center justify-between rounded-lg border-2 border-violet-600 p-4 transition hover:bg-violet-600 hover:text-white"
+              className="group flex justify-between rounded-lg border-2 border-violet-600 p-2 transition hover:bg-violet-600 hover:text-white"
             >
-              <span className="text-xl font-semibold">{item.name}</span>
+              <p
+                onClick={() =>
+                  checkItemMutation.mutate({
+                    id: item.id,
+                    checked: !item.checked,
+                  })
+                }
+                className={
+                  item.checked
+                    ? " p-2 text-xl font-semibold text-zinc-500 line-through decoration-2 group-hover:text-zinc-800"
+                    : "p-2 text-xl font-semibold hover:cursor-pointer"
+                }
+              >
+                {item.name}
+              </p>
+              <button
+                disabled={deleteItemMutation.isLoading}
+                onClick={() => {
+                  deleteItemMutation.mutate({
+                    id: item.id,
+                  });
+                }}
+                className="p-2"
+              >
+                <HiX className="text-lg" />
+              </button>
             </div>
           ))}
         </div>
